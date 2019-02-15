@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Fahrtenschreiber</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_main2">Main2Activity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="refuel_activity_title">Tanken</string>
+    <string name="refuel_activity_comment">km-stand und menge eintragne</string>
+    <string name="trip_add_activity_title">Fahrt eintragen</string>
+    <string name="trip_add_activity_comment">Neue Fahrt mit km-Stand eintragen</string>
+    <string name="km_value">km-Stand</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_record_trip"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="@string/trip_add_activity_title"
+            android:titleCondensed="@string/trip_add_activity_comment" />
+        <item
+            android:id="@+id/nav_record_refuel"
+            android:icon="@android:drawable/ic_menu_mylocation"
+            android:title="@string/refuel_activity_title"
+            android:titleCondensed="@string/refuel_activity_comment" />
+    </group>
+
+    <item android:title="@string/action_settings">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@android:drawable/ic_menu_manage"
+                android:title="@string/action_settings" />
+        </menu>
+    </item>
+
+</menu>
