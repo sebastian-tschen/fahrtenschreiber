@@ -18,7 +18,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
@@ -40,10 +39,12 @@ import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import bastel.de.fahrtenschreiber.pojo.TripEntry;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -52,11 +53,11 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         , EasyPermissions.PermissionCallbacks {
 
     GoogleAccountCredential mCredential;
-    TextView mOutputText;
     private Button mCallApiButton;
     private Button mCallWriteApiButton;
 
     ProgressDialog mProgress;
+    private boolean debug = true;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -66,6 +67,12 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS};
 
+    static final String SHEET_ID = "1x3AFBQ93jx5PXLcbiw3Dbr4jvFrCRRD0nWcFUALkUvo";
+
+
+    public void toast(String s) {
+        Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show();
+    }
     /**
      * Attempts to set the account used with the API credentials. If an account
      * name was previously saved it will use that one; otherwise an account
@@ -119,7 +126,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
-                    mOutputText.setText(
+                    toast(
                             "This app requires Google Play Services. Please install " +
                                     "Google Play Services on your device and relaunch this app.");
                 } else {
@@ -319,7 +326,6 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
         @Override
         protected void onPreExecute() {
-            mOutputText.setText("");
             mProgress.show();
         }
 
@@ -327,9 +333,9 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         protected void onPostExecute(Integer output) {
             mProgress.hide();
             if (output == null) {
-                mOutputText.setText("No results returned.");
+                toast("No results returned.");
             } else {
-                mOutputText.setText("Data points written using the Google Sheets API:" + output);
+                toast("Data points written using the Google Sheets API:" + output);
             }
         }
 
@@ -344,13 +350,13 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 } else if (mLastError instanceof UserRecoverableAuthIOException) {
                     startActivityForResult(
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
-                            MainActivity.REQUEST_AUTHORIZATION);
+                            REQUEST_AUTHORIZATION);
                 } else {
-                    mOutputText.setText("The following error occurred:\n"
+                    toast("The following error occurred:\n"
                             + mLastError.getMessage());
                 }
             } else {
-                mOutputText.setText("Request cancelled.");
+                toast("Request cancelled.");
             }
         }
     }
@@ -359,11 +365,11 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
      * An asynchronous task that handles the Google Sheets API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
-    private class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+    class GetLastEntryTask extends AsyncTask<String, Void, TripEntry> {
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
 
-        MakeRequestTask(GoogleAccountCredential credential) {
+        GetLastEntryTask(GoogleAccountCredential credential) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.sheets.v4.Sheets.Builder(
@@ -375,12 +381,12 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         /**
          * Background task to call Google Sheets API.
          *
-         * @param params no parameters needed for this task.
+         * @param spreadsheet the spreadsheet id to work on
          */
         @Override
-        protected List<String> doInBackground(Void... params) {
+        protected TripEntry doInBackground(String... spreadsheet) {
             try {
-                return getDataFromApi();
+                return getDataFromApi(spreadsheet[0]);
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
@@ -392,44 +398,54 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
          * Fetch a list of names and majors of students in a sample spreadsheet:
          * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
          *
+         * @param spreadsheet - the spreadsheet id to catch the data from
          * @return List of names and majors
          * @throws IOException
          */
-        private List<String> getDataFromApi() throws IOException {
+        private TripEntry getDataFromApi(String spreadsheet) throws IOException {
             String spreadsheetId = "1dIaspi-6c2Ehk_kWWWFTsUEigYs4VbubQzDgJfjrNYc";
-            String range = "sheet!A2:E";
-            List<String> results = new ArrayList<String>();
+            String range = "Fahrten!A2:D";
             ValueRange response = this.mService.spreadsheets().values()
                     .get(spreadsheetId, range)
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values != null) {
-                results.add("Name, Adress");
-                for (List row : values) {
-                    if (row.size() > 4) {
-                        results.add(row.get(0) + ", " + row.get(4));
+                for (int i = 1; i < values.size(); i++) {
+                    List<Object> row = values.get(values.size() - i);
+                    if (row.size() == 4) {
+                        return new TripEntry((String) row.get(0), (Integer) row.get(3), (LocalDate) row.get(1), values.size() + 2 - i);
                     }
+
                 }
             }
-            return results;
+            return new TripEntry(null, null, null, null);
         }
 
 
         @Override
         protected void onPreExecute() {
-            mOutputText.setText("");
-            mProgress.show();
+//            mOutputText.setText("");
+//            mProgress.show();
+
+            if (debug) {
+                Toast.makeText(getApplicationContext(), "finding last entry", Toast.LENGTH_SHORT).show();
+            }
         }
 
         @Override
-        protected void onPostExecute(List<String> output) {
-            mProgress.hide();
-            if (output == null || output.size() == 0) {
-                mOutputText.setText("No results returned.");
-            } else {
-                output.add(0, "Data retrieved using the Google Sheets API:");
-                mOutputText.setText(TextUtils.join("\n", output));
+        protected void onPostExecute(TripEntry last_trip) {
+//            mProgress.hide();
+//            if (output == null || output.size() == 0) {
+//                mOutputText.setText("No results returned.");
+//            } else {
+//                output.add(0, "Data retrieved using the Google Sheets API:");
+//                mOutputText.setText(TextUtils.join("\n", output));
+//            }
+
+            if (debug) {
+                Toast.makeText(getApplicationContext(), "found last entry:" + last_trip, Toast.LENGTH_SHORT).show();
             }
+
         }
 
         @Override
@@ -443,13 +459,13 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 } else if (mLastError instanceof UserRecoverableAuthIOException) {
                     startActivityForResult(
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
-                            MainActivity.REQUEST_AUTHORIZATION);
+                            REQUEST_AUTHORIZATION);
                 } else {
-                    mOutputText.setText("The following error occurred:\n"
+                    toast("The following error occurred:\n"
                             + mLastError.getMessage());
                 }
             } else {
-                mOutputText.setText("Request cancelled.");
+                toast("Request cancelled.");
             }
         }
 

@@ -1,16 +1,7 @@
 package bastel.de.fahrtenschreiber;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.NavigationView;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Toast;
+import android.view.View;
 
 public class TripRecordActivity extends FahrtenschreiberActivity {
 
@@ -21,7 +12,6 @@ public class TripRecordActivity extends FahrtenschreiberActivity {
     }
 
 
-
     /**
      * Attempt to call the API, after verifying that all the preconditions are
      * satisfied. The preconditions are: Google Play Services installed, an
@@ -29,7 +19,8 @@ public class TripRecordActivity extends FahrtenschreiberActivity {
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void writeToApi() {
+
+    public void writeToApi(View view) {
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
         }
@@ -37,9 +28,11 @@ public class TripRecordActivity extends FahrtenschreiberActivity {
             chooseAccount();
         }
         if (!isDeviceOnline()) {
-            mOutputText.setText("No network connection available.");
+            toast("No network connection available.");
+
         } else {
-            new MakeWriteRequestTask(mCredential).execute();
+            new GetLastEntryTask(mCredential).execute(SHEET_ID);
         }
     }
+
 }

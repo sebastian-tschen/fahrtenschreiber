@@ -27,6 +27,7 @@
         android:layout_width="0dp"
         android:layout_height="75dp"
         android:background="@color/colorPrimary"
+        android:onClick="writeToApi"
         android:src="@drawable/side_nav_bar"
         android:text="@string/trip_add_activity_title"
         app:layout_constraintBottom_toBottomOf="parent"
