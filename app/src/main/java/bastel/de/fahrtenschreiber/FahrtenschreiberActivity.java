@@ -2,6 +2,7 @@ package bastel.de.fahrtenschreiber;
 
 import android.Manifest;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -10,13 +11,17 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.NavigationView;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+
+import androidx.annotation.NonNull;
+
+import com.google.android.material.navigation.NavigationView;
+
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -47,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import androidx.preference.PreferenceManager;
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
 import listeners.TripEntryUpdatedListener;
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -60,8 +66,6 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     private static final Duration TRIP_ENTRY_TIMEOUT = Duration.ofMinutes(4);
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     GoogleAccountCredential mCredential;
-    private Button mCallApiButton;
-    private Button mCallWriteApiButton;
 
     //    ProgressDialog mProgress;
     private boolean verbose = true;
@@ -78,6 +82,17 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     private TripEntry latestTripEntry = null;
     private Instant latestTripEntryTimestamp = null;
 
+
+    public String getSheetId() {
+        return PreferenceManager.getDefaultSharedPreferences(this)
+                .getString("sheet_id", SHEET_ID);
+    }
+
+    public String getDefaultDriver() {
+
+        return PreferenceManager.getDefaultSharedPreferences(this)
+                .getString("driver", "");
+    }
 
     public void toast(String s) {
 
@@ -161,7 +176,6 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
-//                        getResultsFromApi();
                     }
                 }
                 break;
@@ -281,7 +295,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 Duration.between(latestTripEntryTimestamp, Instant.now()).getSeconds() < TRIP_ENTRY_TIMEOUT.getSeconds()) {
             callback.tripEntryUpdated(latestTripEntry);
         } else {
-            new GetLastEntryTask(mCredential, callback).execute(SHEET_ID);
+            new GetLastEntryTask(mCredential, callback).execute(getSheetId());
         }
     }
 

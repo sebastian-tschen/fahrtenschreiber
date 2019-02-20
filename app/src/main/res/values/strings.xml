@@ -13,4 +13,6 @@
     <string name="trip_add_activity_title">Fahrt eintragen</string>
     <string name="trip_add_activity_comment">Neue Fahrt mit km-Stand eintragen</string>
     <string name="km_value">km-Stand</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="driver_key">driver</string>
 </resources>
