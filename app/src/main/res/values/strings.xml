@@ -8,6 +8,7 @@
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="refuel_activity_title">Tanken</string>
+    <string name="settings_activity_title">Einstellungen</string>
     <string name="refuel_activity_comment">km-stand und menge eintragne</string>
     <string name="trip_add_activity_title">Fahrt eintragen</string>
     <string name="trip_add_activity_comment">Neue Fahrt mit km-Stand eintragen</string>

@@ -3,7 +3,6 @@ package bastel.de.fahrtenschreiber;
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,10 +17,10 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -35,16 +34,21 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
-import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
+import com.google.api.services.sheets.v4.model.AppendValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
+import listeners.TripEntryUpdatedListener;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -52,12 +56,15 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener
         , EasyPermissions.PermissionCallbacks {
 
+    private static final String F_TAG = "ftag";
+    private static final Duration TRIP_ENTRY_TIMEOUT = Duration.ofMinutes(4);
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     GoogleAccountCredential mCredential;
     private Button mCallApiButton;
     private Button mCallWriteApiButton;
 
-    ProgressDialog mProgress;
-    private boolean debug = true;
+    //    ProgressDialog mProgress;
+    private boolean verbose = true;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
@@ -68,11 +75,20 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS};
 
     static final String SHEET_ID = "1x3AFBQ93jx5PXLcbiw3Dbr4jvFrCRRD0nWcFUALkUvo";
+    private TripEntry latestTripEntry = null;
+    private Instant latestTripEntryTimestamp = null;
 
 
     public void toast(String s) {
+
         Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show();
+        Log.d(F_TAG, s);
     }
+
+    public void debug(String s) {
+        Log.d(F_TAG, s);
+    }
+
     /**
      * Attempts to set the account used with the API credentials. If an account
      * name was previously saved it will use that one; otherwise an account
@@ -259,30 +275,45 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         dialog.show();
     }
 
-    class MakeWriteRequestTask extends AsyncTask<Void, Void, Integer> {
+    public void getLatestTripEntryAsync(TripEntryUpdatedListener callback) {
+
+        if ((latestTripEntry != null) &&
+                Duration.between(latestTripEntryTimestamp, Instant.now()).getSeconds() < TRIP_ENTRY_TIMEOUT.getSeconds()) {
+            callback.tripEntryUpdated(latestTripEntry);
+        } else {
+            new GetLastEntryTask(mCredential, callback).execute(SHEET_ID);
+        }
+    }
+
+    class MakeWriteRequestTask extends AsyncTask<Object, Void, Integer> {
 
 
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
 
-        MakeWriteRequestTask(GoogleAccountCredential credential) {
+        TripEntryUpdatedListener callback;
+
+        MakeWriteRequestTask(GoogleAccountCredential credential, TripEntryUpdatedListener callback) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.sheets.v4.Sheets.Builder(
                     transport, jsonFactory, credential)
                     .setApplicationName("Google Sheets API Android Quickstart")
                     .build();
+            this.callback = callback;
         }
 
         /**
          * Background task to call Google Sheets API.
          *
-         * @param params no parameters needed for this task.
+         * @param data no parameters needed for this task.
          */
         @Override
-        protected Integer doInBackground(Void... params) {
+        protected Integer doInBackground(Object... data) {
+            String spreadsheet = (String) data[0];
+            TripEntry tripEntry = (TripEntry) data[1];
             try {
-                return writeDataToApi();
+                return appendTripEntryRow(spreadsheet, tripEntry);
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
@@ -298,16 +329,26 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
          * @return List of names and majors
          * @throws IOException
          */
-        private int writeDataToApi() throws IOException {
-            String spreadsheetId = "1dIaspi-6c2Ehk_kWWWFTsUEigYs4VbubQzDgJfjrNYc";
-            String range = "sheet!B2";
+        private int appendTripEntryRow(String spreadsheet, TripEntry data) throws IOException {
+
+//            String range = "Fahrten!A" + data.getRow() + ":D" + data.getRow();
+            String range = "Fahrten!A2:D2";
             ValueRange input = new ValueRange();
-            input.setValues(getListOf("foo", 5, 1));
-            UpdateValuesResponse response = this.mService.spreadsheets().values()
-                    .update(spreadsheetId, range, input)
-                    .setValueInputOption("RAW")
+            input.setRange(range);
+            List<Object> rowData = new ArrayList<>();
+            rowData.add(data.getDriver());
+            rowData.add(data.getDate().format(DATE_TIME_FORMATTER));
+            rowData.add(data.getOdo().toString());
+            rowData.add("added via Fahrtenschreiber (TM)");
+            List<List<Object>> matrixData = new ArrayList<>();
+            matrixData.add(rowData);
+            input.setValues(matrixData);
+            AppendValuesResponse response = this.mService.spreadsheets().values()
+                    .append(spreadsheet, range, input)
+                    .setValueInputOption("USER_ENTERED")
+                    .setInsertDataOption("OVERWRITE")
                     .execute();
-            return response.getUpdatedColumns();
+            return 1;
         }
 
         private List<List<Object>> getListOf(String content, int outer, int inner) {
@@ -326,22 +367,19 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
         @Override
         protected void onPreExecute() {
-            mProgress.show();
+//            mProgress.show();
         }
 
         @Override
         protected void onPostExecute(Integer output) {
-            mProgress.hide();
-            if (output == null) {
-                toast("No results returned.");
-            } else {
-                toast("Data points written using the Google Sheets API:" + output);
+            if (callback != null) {
+                callback.tripEntryUpdated(null);
             }
         }
 
         @Override
         protected void onCancelled() {
-            mProgress.hide();
+//            mProgress.hide();
             if (mLastError != null) {
                 if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
                     showGooglePlayServicesAvailabilityErrorDialog(
@@ -368,14 +406,27 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     class GetLastEntryTask extends AsyncTask<String, Void, TripEntry> {
         private com.google.api.services.sheets.v4.Sheets mService = null;
         private Exception mLastError = null;
+        private List<TripEntryUpdatedListener> listeners = new ArrayList<>();
 
-        GetLastEntryTask(GoogleAccountCredential credential) {
+        GetLastEntryTask(GoogleAccountCredential credential, TripEntryUpdatedListener listener) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.sheets.v4.Sheets.Builder(
                     transport, jsonFactory, credential)
                     .setApplicationName("Google Sheets API Android Quickstart")
                     .build();
+            if (listener != null) {
+                listeners.add(listener);
+            }
+        }
+
+
+        public void addListener(TripEntryUpdatedListener listener) {
+            listeners.add(listener);
+        }
+
+        public boolean removeListener(TripEntryUpdatedListener listener) {
+            return listeners.remove(listener);
         }
 
         /**
@@ -386,9 +437,10 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         @Override
         protected TripEntry doInBackground(String... spreadsheet) {
             try {
-                return getDataFromApi(spreadsheet[0]);
+                return getLatestTripEntry(spreadsheet[0]);
             } catch (Exception e) {
                 mLastError = e;
+                Log.d("ftag", "error in requesting latest trip entry", e);
                 cancel(true);
                 return null;
             }
@@ -402,18 +454,26 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
          * @return List of names and majors
          * @throws IOException
          */
-        private TripEntry getDataFromApi(String spreadsheet) throws IOException {
-            String spreadsheetId = "1dIaspi-6c2Ehk_kWWWFTsUEigYs4VbubQzDgJfjrNYc";
+        private TripEntry getLatestTripEntry(String spreadsheet) throws IOException {
+
             String range = "Fahrten!A2:D";
             ValueRange response = this.mService.spreadsheets().values()
-                    .get(spreadsheetId, range)
+                    .get(spreadsheet, range)
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values != null) {
                 for (int i = 1; i < values.size(); i++) {
                     List<Object> row = values.get(values.size() - i);
-                    if (row.size() == 4) {
-                        return new TripEntry((String) row.get(0), (Integer) row.get(3), (LocalDate) row.get(1), values.size() + 2 - i);
+                    if (row.size() >= 3) {
+                        String driver = (String) row.get(0);
+                        int odo = Integer.parseInt((String) row.get(2));
+                        LocalDate date = null;
+                        try {
+                            date = LocalDate.parse((String) row.get(1), DATE_TIME_FORMATTER);
+                        } catch (DateTimeParseException e) {
+                            //date could not be parsed. just leave blank
+                        }
+                        return new TripEntry(driver, odo, date, values.size() + 2 - i);
                     }
 
                 }
@@ -424,33 +484,27 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
         @Override
         protected void onPreExecute() {
-//            mOutputText.setText("");
-//            mProgress.show();
-
-            if (debug) {
-                Toast.makeText(getApplicationContext(), "finding last entry", Toast.LENGTH_SHORT).show();
+            if (verbose) {
+                toast("finding last entry");
             }
         }
 
         @Override
-        protected void onPostExecute(TripEntry last_trip) {
-//            mProgress.hide();
-//            if (output == null || output.size() == 0) {
-//                mOutputText.setText("No results returned.");
-//            } else {
-//                output.add(0, "Data retrieved using the Google Sheets API:");
-//                mOutputText.setText(TextUtils.join("\n", output));
-//            }
-
-            if (debug) {
-                Toast.makeText(getApplicationContext(), "found last entry:" + last_trip, Toast.LENGTH_SHORT).show();
+        protected void onPostExecute(TripEntry lastTrip) {
+            if (verbose) {
+                latestTripEntry = lastTrip;
+                latestTripEntryTimestamp = Instant.now();
+                for (TripEntryUpdatedListener listener : listeners) {
+                    listener.tripEntryUpdated(latestTripEntry);
+                }
+                toast("found last entry: " + lastTrip);
             }
 
         }
 
         @Override
         protected void onCancelled() {
-            mProgress.hide();
+//            mProgress.hide();
             if (mLastError != null) {
                 if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
                     showGooglePlayServicesAvailabilityErrorDialog(
@@ -519,6 +573,8 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent newAct = new Intent(this, SettingsActivity.class);
+            startActivity(newAct);
             return true;
         }
 
@@ -533,24 +589,25 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
         if (id == R.id.nav_record_trip) {
             Intent newAct = new Intent(this, TripRecordActivity.class);
-            newAct.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(newAct);
-            finish();
             overridePendingTransition(R.anim.enter_from_left, R.anim.exit_to_right);
         } else if (id == R.id.nav_record_refuel) {
 
             Intent newAct = new Intent(this, RefuelRecordActivity.class);
-            newAct.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(newAct);
-            finish();
             overridePendingTransition(R.anim.enter_from_right, R.anim.exit_to_left);
         } else if (id == R.id.nav_settings) {
-            Toast.makeText(getApplicationContext(), "navigate to settings", Toast.LENGTH_SHORT).show();
+            Intent newAct = new Intent(this, SettingsActivity.class);
+            startActivity(newAct);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    public void invalidateLatestTripEntry() {
+        latestTripEntry = null;
     }
 
 

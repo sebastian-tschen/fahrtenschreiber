@@ -53,8 +53,9 @@ public class TripEntry {
 
     @Override
     public String toString() {
-        return "" + date +
-                "-" + odo +
-                "-row:" + row;
+        return "" + driver +
+                " - " + date +
+                " - " + odo +
+                " - row: " + row;
     }
 }
