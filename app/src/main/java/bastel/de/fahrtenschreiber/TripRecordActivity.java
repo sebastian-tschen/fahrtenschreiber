@@ -29,7 +29,7 @@ public class TripRecordActivity extends FahrtenschreiberActivity {
             chooseAccount();
         }
         if (isDeviceOnline()) {
-            getLatestTripEntryAsync(latestTripEntry -> {
+            eventuallyGetLatestTrip(latestTripEntry -> {
                 ((EditText) findViewById(R.id.odometer_reading)).setText(latestTripEntry.getOdo().toString());
             });
         }
@@ -71,11 +71,6 @@ public class TripRecordActivity extends FahrtenschreiberActivity {
 
     }
 
-    public void writeNewEntry(TripEntry data) {
-        debug("write entry: " + data);
-        invalidateLatestTripEntry();
-        new MakeWriteRequestTask(mCredential, latestTripEntry -> toast("written " + data.getOdo() + "km")).execute(getSheetId(), data);
-    }
 
 
 }

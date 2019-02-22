@@ -15,4 +15,5 @@
     <string name="km_value">km-Stand</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="driver_key">driver</string>
+    <string name="qick_trip_activity_title">Schnelleintragen</string>
 </resources>

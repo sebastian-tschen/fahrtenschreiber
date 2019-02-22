@@ -10,6 +10,11 @@
             android:title="@string/trip_add_activity_title"
             android:titleCondensed="@string/trip_add_activity_comment" />
         <item
+            android:id="@+id/nav_quick_trip"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="@string/qick_trip_activity_title"
+            android:titleCondensed="@string/trip_add_activity_comment" />
+        <item
             android:id="@+id/nav_record_refuel"
             android:icon="@android:drawable/ic_menu_mylocation"
             android:title="@string/refuel_activity_title"

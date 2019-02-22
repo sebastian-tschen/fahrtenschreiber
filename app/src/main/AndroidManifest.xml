@@ -18,22 +18,31 @@
             android:label="@string/refuel_activity_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".SettingsActivity"
-            android:label="@string/settings_activity_title"
-            android:parentActivityName=".TripRecordActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".TripRecordActivity" />
-        </activity>
-        <activity
-            android:name=".TripRecordActivity"
-            android:label="@string/trip_add_activity_title"
+            android:name=".QuickTripInputActivity"
+            android:label="@string/qick_trip_activity_title"
             android:theme="@style/AppTheme.NoActionBar">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/settings_activity_title"
+            android:parentActivityName=".QuickTripInputActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".QuickTripInputActivity" />
+        </activity>
+        <activity
+            android:name=".TripRecordActivity"
+            android:label="@string/trip_add_activity_title"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
     </application>
 
 </manifest>

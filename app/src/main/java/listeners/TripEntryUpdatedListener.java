@@ -2,7 +2,8 @@ package listeners;
 
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
 
-public interface TripEntryUpdatedListener {
+@FunctionalInterface
+public interface TripEntryUpdatedListener{
     void tripEntryUpdated(TripEntry latestTripEntry);
 
 }

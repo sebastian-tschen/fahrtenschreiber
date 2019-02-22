@@ -2,7 +2,6 @@ package bastel.de.fahrtenschreiber;
 
 import android.Manifest;
 import android.accounts.AccountManager;
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -25,7 +24,6 @@ import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -54,6 +52,7 @@ import java.util.List;
 
 import androidx.preference.PreferenceManager;
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
+import listeners.EventuallyGetLatestTripCallback;
 import listeners.TripEntryUpdatedListener;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -81,6 +80,9 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     static final String SHEET_ID = "1x3AFBQ93jx5PXLcbiw3Dbr4jvFrCRRD0nWcFUALkUvo";
     private TripEntry latestTripEntry = null;
     private Instant latestTripEntryTimestamp = null;
+
+    ArrayList<EventuallyGetLatestTripCallback> tripEntryCallbacks = new ArrayList<>();
+    private boolean lastEntryRetrievalRunning = false;
 
 
     public String getSheetId() {
@@ -181,7 +183,8 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-//                    getResultsFromApi();
+                    eventuallyGetLatestTrip(tripEntry -> {
+                    });
                 }
                 break;
         }
@@ -289,17 +292,13 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         dialog.show();
     }
 
-    public void getLatestTripEntryAsync(TripEntryUpdatedListener callback) {
 
-        if ((latestTripEntry != null) &&
-                Duration.between(latestTripEntryTimestamp, Instant.now()).getSeconds() < TRIP_ENTRY_TIMEOUT.getSeconds()) {
-            callback.tripEntryUpdated(latestTripEntry);
-        } else {
-            new GetLastEntryTask(mCredential, callback).execute(getSheetId());
-        }
+    private boolean isLastEntryAvailable() {
+        return (latestTripEntry != null) &&
+                Duration.between(latestTripEntryTimestamp, Instant.now()).getSeconds() < TRIP_ENTRY_TIMEOUT.getSeconds();
     }
 
-    class MakeWriteRequestTask extends AsyncTask<Object, Void, Integer> {
+    class MakeWriteRequestTask extends AsyncTask<Object, Void, TripEntry> {
 
 
         private com.google.api.services.sheets.v4.Sheets mService = null;
@@ -323,7 +322,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
          * @param data no parameters needed for this task.
          */
         @Override
-        protected Integer doInBackground(Object... data) {
+        protected TripEntry doInBackground(Object... data) {
             String spreadsheet = (String) data[0];
             TripEntry tripEntry = (TripEntry) data[1];
             try {
@@ -343,7 +342,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
          * @return List of names and majors
          * @throws IOException
          */
-        private int appendTripEntryRow(String spreadsheet, TripEntry data) throws IOException {
+        private TripEntry appendTripEntryRow(String spreadsheet, TripEntry data) throws IOException {
 
 //            String range = "Fahrten!A" + data.getRow() + ":D" + data.getRow();
             String range = "Fahrten!A2:D2";
@@ -362,7 +361,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                     .setValueInputOption("USER_ENTERED")
                     .setInsertDataOption("OVERWRITE")
                     .execute();
-            return 1;
+            return data;
         }
 
         private List<List<Object>> getListOf(String content, int outer, int inner) {
@@ -385,9 +384,9 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onPostExecute(Integer output) {
+        protected void onPostExecute(TripEntry output) {
             if (callback != null) {
-                callback.tripEntryUpdated(null);
+                callback.tripEntryUpdated(output);
             }
         }
 
@@ -559,6 +558,9 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
+        eventuallyGetLatestTrip(tripEntry -> {
+        });
+
     }
 
     @Override
@@ -610,6 +612,10 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
             Intent newAct = new Intent(this, RefuelRecordActivity.class);
             startActivity(newAct);
             overridePendingTransition(R.anim.enter_from_right, R.anim.exit_to_left);
+        } else if (id == R.id.nav_quick_trip) {
+            Intent newAct = new Intent(this, QuickTripInputActivity.class);
+            startActivity(newAct);
+            overridePendingTransition(R.anim.enter_from_right, R.anim.exit_to_left);
         } else if (id == R.id.nav_settings) {
             Intent newAct = new Intent(this, SettingsActivity.class);
             startActivity(newAct);
@@ -624,5 +630,41 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         latestTripEntry = null;
     }
 
+
+    public synchronized void eventuallyGetLatestTrip(EventuallyGetLatestTripCallback callback) {
+        if (isLastEntryAvailable()) {
+            callback.lastTripRecieved(latestTripEntry);
+            return;
+        }
+        tripEntryCallbacks.add(callback);
+        if (!lastEntryRetrievalRunning && mCredential.getSelectedAccount() != null) {
+            lastEntryRetrievalRunning = true;
+            new GetLastEntryTask(mCredential, this::writeNewLatestTripValue).execute(getSheetId());
+        }
+    }
+
+
+    public synchronized void writeNewLatestTripValue(TripEntry latestTrip) {
+        latestTripEntry = latestTrip;
+        latestTripEntryTimestamp = Instant.now();
+        for (EventuallyGetLatestTripCallback callback : tripEntryCallbacks) {
+            callback.lastTripRecieved(latestTripEntry);
+        }
+        tripEntryCallbacks.clear();
+        lastEntryRetrievalRunning = false;
+    }
+
+
+    public void writeNewEntry(TripEntry data) {
+        debug("write entry: " + data);
+        invalidateLatestTripEntry();
+        new MakeWriteRequestTask(mCredential, this::entryWritten).execute(getSheetId(), data);
+    }
+
+    private void entryWritten(TripEntry tripEntry) {
+        toast("written " + tripEntry.getOdo() + "km");
+        eventuallyGetLatestTrip(tripEntry1 -> {
+        });
+    }
 
 }

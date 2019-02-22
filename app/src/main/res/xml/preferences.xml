@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <CheckBoxPreference
-        android:key="checkbox"
-        android:summary="Tap to check if on or off"
-        android:title="Checkbox Preference" />
     <EditTextPreference
         android:dialogTitle="Enter a text"
         android:key="driver"
@@ -14,16 +10,4 @@
         android:key="sheet_id"
         android:summary="die id der tabelle in die eingetragen wird"
         android:title="Sheet_ID" />
-    <ListPreference
-        android:dialogTitle="Select duration"
-        android:entries="@array/settings_list_preference_titles"
-        android:entryValues="@array/settings_list_preference_values"
-        android:key="list"
-        android:summary="Click to show a list to choose from"
-        android:title="List Preference" />
-    <SwitchPreference
-        android:key="switch"
-        android:title="Switch Preference"
-        android:summary="Click to switch on or off"
-        android:defaultValue="true"/>
 </PreferenceScreen>

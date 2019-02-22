@@ -1,15 +1,11 @@
 package bastel.de.fahrtenschreiber;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NavUtils;
-import androidx.preference.EditTextPreference;
-import androidx.preference.PreferenceManager;
 
 public class SettingsActivity extends AppCompatActivity {
 

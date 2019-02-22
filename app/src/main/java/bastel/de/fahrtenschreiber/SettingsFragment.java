@@ -50,6 +50,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     }
 
     private boolean checkSheetAvailable(Object newValue) {
-        return false;
+
+        return true;
+
     }
 }
