@@ -27,6 +27,7 @@ import java.util.List;
 
 import androidx.preference.PreferenceManager;
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
+import listeners.CheckIdCallback;
 import listeners.EventuallyGetLatestTripCallback;
 import listeners.OnCancelledListener;
 import listeners.TripEntryUpdatedListener;
@@ -101,6 +102,12 @@ public class SheetsHelper {
     private boolean isLastEntryAvailable() {
         return (latestTripEntry != null) &&
                 Duration.between(latestTripEntryTimestamp, Instant.now()).getSeconds() < TRIP_ENTRY_TIMEOUT.getSeconds();
+    }
+
+    public void checkSheetsId(CheckIdCallback callback, String sheetsId) {
+        new GetLastEntryTask(latestTripEntry1 -> callback.sheetsIdChecked(true, null),
+                error -> callback.sheetsIdChecked(false, error)).execute(sheetsId);
+
     }
 
     class MakeWriteRequestTask extends AsyncTask<Object, Void, TripEntry> {
@@ -316,7 +323,7 @@ public class SheetsHelper {
                 } else {
                     toast("an unknown error occured");
                 }
-                lastEntryRetrievalRunning=false;
+                lastEntryRetrievalRunning = false;
             }).execute(getSheetId());
         }
     }

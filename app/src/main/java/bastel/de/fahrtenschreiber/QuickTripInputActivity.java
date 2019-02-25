@@ -22,7 +22,7 @@ import bastel.de.fahrtenschreiber.ui.KeyPadButton;
 public class QuickTripInputActivity extends FahrtenschreiberActivity implements DatePickerDialog.OnDateSetListener {
 
 
-    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM");
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.");
     private List<Integer> buttonsIds;
     private TextView newOdoReadingTextView;
     private TextView projectedDistanceTextView;
@@ -195,7 +195,7 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
 
     @Override
     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-        date = LocalDate.of(year, month, dayOfMonth);
+        date = LocalDate.of(year, month+1, dayOfMonth);
         dateButton.setText(date.format(DATE_FORMATTER));
     }
 

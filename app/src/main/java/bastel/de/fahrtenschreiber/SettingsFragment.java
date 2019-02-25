@@ -1,7 +1,9 @@
 package bastel.de.fahrtenschreiber;
 
+import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -50,8 +52,18 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     }
 
     private boolean checkSheetAvailable(Object newValue) {
+        ProgressDialog progressDialog = new ProgressDialog(getContext());
+        progressDialog.show();
 
-        return true;
+        SheetsHelper.getInstance().checkSheetsId((valid, reason) -> {
+            progressDialog.hide();
+            if (valid) {
+                sheetIDPreference.setText((String) newValue);
+            } else {
+                Toast.makeText(getContext().getApplicationContext(), "not a valid sheets id: "+reason.getMessage(), Toast.LENGTH_SHORT);
+            }
+        }, (String) newValue);
+        return false;
 
     }
 }
