@@ -1,8 +1,6 @@
 package bastel.de.fahrtenschreiber;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
@@ -14,6 +12,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecovera
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.AppendValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -29,6 +28,7 @@ import java.util.List;
 import androidx.preference.PreferenceManager;
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
 import listeners.EventuallyGetLatestTripCallback;
+import listeners.OnCancelledListener;
 import listeners.TripEntryUpdatedListener;
 
 public class SheetsHelper {
@@ -45,7 +45,7 @@ public class SheetsHelper {
 
     private GoogleAccountCredential mCredential;
     private Context appContext;
-
+    private Sheets mService;
 
 
     public String getSheetId() {
@@ -64,15 +64,29 @@ public class SheetsHelper {
         return instance;
     }
 
+    /**
+     * initialize this singelton if it is not already initialized.
+     *
+     * @param appContext
+     * @param credential
+     */
     public synchronized void init(Context appContext, GoogleAccountCredential credential) {
+        if (!isInitialized()) {
+            mCredential = credential;
+            this.appContext = appContext;
 
-        mCredential = credential;
-        this.appContext = appContext;
+            HttpTransport transport = AndroidHttp.newCompatibleTransport();
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
+                    transport, jsonFactory, credential)
+                    .setApplicationName("Google Sheets API Android Quickstart")
+                    .build();
 
+        }
     }
 
-    public synchronized boolean isInitialized(){
-        return mCredential!=null;
+    public synchronized boolean isInitialized() {
+        return mCredential != null;
     }
 
     ArrayList<EventuallyGetLatestTripCallback> tripEntryCallbacks = new ArrayList<>();
@@ -88,23 +102,19 @@ public class SheetsHelper {
         return (latestTripEntry != null) &&
                 Duration.between(latestTripEntryTimestamp, Instant.now()).getSeconds() < TRIP_ENTRY_TIMEOUT.getSeconds();
     }
+
     class MakeWriteRequestTask extends AsyncTask<Object, Void, TripEntry> {
 
 
-        private com.google.api.services.sheets.v4.Sheets mService = null;
+        private final OnCancelledListener onCancelledCallback;
         private Exception mLastError = null;
 
         TripEntryUpdatedListener callback;
 
-        MakeWriteRequestTask(GoogleAccountCredential credential, TripEntryUpdatedListener callback) {
-            HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
-                    transport, jsonFactory, credential)
-                    .setApplicationName("Google Sheets API Android Quickstart")
-                    .build();
+        MakeWriteRequestTask(TripEntryUpdatedListener callback, OnCancelledListener onCancelledCallback) {
+
             this.callback = callback;
-            this.callingActivity = (Activity) callingActivity;
+            this.onCancelledCallback = onCancelledCallback;
         }
 
 
@@ -148,7 +158,7 @@ public class SheetsHelper {
             List<List<Object>> matrixData = new ArrayList<>();
             matrixData.add(rowData);
             input.setValues(matrixData);
-            AppendValuesResponse response = this.mService.spreadsheets().values()
+            AppendValuesResponse response = mService.spreadsheets().values()
                     .append(spreadsheet, range, input)
                     .setValueInputOption("USER_ENTERED")
                     .setInsertDataOption("OVERWRITE")
@@ -171,11 +181,6 @@ public class SheetsHelper {
 
 
         @Override
-        protected void onPreExecute() {
-//            mProgress.show();
-        }
-
-        @Override
         protected void onPostExecute(TripEntry output) {
             if (callback != null) {
                 callback.tripEntryUpdated(output);
@@ -184,26 +189,9 @@ public class SheetsHelper {
 
         @Override
         protected void onCancelled() {
-
-            activity.sheetsHelperCancelled(mLastError);
-//            mProgress.hide();
-            if (mLastError != null) {
-                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
-                    showGooglePlayServicesAvailabilityErrorDialog(
-                            ((GooglePlayServicesAvailabilityIOException) mLastError)
-                                    .getConnectionStatusCode());
-                } else if (mLastError instanceof UserRecoverableAuthIOException) {
-                    startActivityForResult(
-                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
-                            REQUEST_AUTHORIZATION);
-                } else {
-                    toast("The following error occurred:\n"
-                            + mLastError.getMessage());
-                }
-            } else {
-                toast("Request cancelled.");
-            }
+            onCancelledCallback.onCancel(mLastError);
         }
+
     }
 
     /**
@@ -211,17 +199,13 @@ public class SheetsHelper {
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
     class GetLastEntryTask extends AsyncTask<String, Void, TripEntry> {
-        private com.google.api.services.sheets.v4.Sheets mService = null;
+        private final OnCancelledListener onCancelledListener;
         private Exception mLastError = null;
         private List<TripEntryUpdatedListener> listeners = new ArrayList<>();
 
-        GetLastEntryTask(GoogleAccountCredential credential, TripEntryUpdatedListener listener) {
-            HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
-                    transport, jsonFactory, credential)
-                    .setApplicationName("Google Sheets API Android Quickstart")
-                    .build();
+        GetLastEntryTask(TripEntryUpdatedListener listener, OnCancelledListener onCancelledListener) {
+
+            this.onCancelledListener = onCancelledListener;
             if (listener != null) {
                 listeners.add(listener);
             }
@@ -264,7 +248,7 @@ public class SheetsHelper {
         private TripEntry getLatestTripEntry(String spreadsheet) throws IOException {
 
             String range = "Fahrten!A2:D";
-            ValueRange response = this.mService.spreadsheets().values()
+            ValueRange response = mService.spreadsheets().values()
                     .get(spreadsheet, range)
                     .execute();
             List<List<Object>> values = response.getValues();
@@ -296,34 +280,18 @@ public class SheetsHelper {
 
         @Override
         protected void onPostExecute(TripEntry lastTrip) {
-                latestTripEntry = lastTrip;
-                latestTripEntryTimestamp = Instant.now();
-                for (TripEntryUpdatedListener listener : listeners) {
-                    listener.tripEntryUpdated(latestTripEntry);
-                }
-                toast("found last entry: " + lastTrip);
+            latestTripEntry = lastTrip;
+            latestTripEntryTimestamp = Instant.now();
+            for (TripEntryUpdatedListener listener : listeners) {
+                listener.tripEntryUpdated(latestTripEntry);
+            }
+            toast("found last entry: " + lastTrip);
 
         }
 
         @Override
         protected void onCancelled() {
-//            mProgress.hide();
-            if (mLastError != null) {
-                if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
-                    showGooglePlayServicesAvailabilityErrorDialog(
-                            ((GooglePlayServicesAvailabilityIOException) mLastError)
-                                    .getConnectionStatusCode());
-                } else if (mLastError instanceof UserRecoverableAuthIOException) {
-                    startActivityForResult(
-                            ((UserRecoverableAuthIOException) mLastError).getIntent(),
-                            REQUEST_AUTHORIZATION);
-                } else {
-                    toast("The following error occurred:\n"
-                            + mLastError.getMessage());
-                }
-            } else {
-                toast("Request cancelled.");
-            }
+            onCancelledListener.onCancel(mLastError);
         }
 
     }
@@ -342,7 +310,14 @@ public class SheetsHelper {
         tripEntryCallbacks.add(callback);
         if (!lastEntryRetrievalRunning && mCredential.getSelectedAccount() != null) {
             lastEntryRetrievalRunning = true;
-            new GetLastEntryTask(mCredential, this::writeNewLatestTripValue).execute(getSheetId());
+            new GetLastEntryTask(this::writeNewLatestTripValue, error -> {
+                if (error != null) {
+                    toast("the following error occurd: " + error.getMessage());
+                } else {
+                    toast("an unknown error occured");
+                }
+                lastEntryRetrievalRunning=false;
+            }).execute(getSheetId());
         }
     }
 
@@ -358,10 +333,10 @@ public class SheetsHelper {
     }
 
 
-    public void writeNewEntry(TripEntry data) {
-        Log.d(TAG,"write entry: " + data);
+    public void writeNewEntry(TripEntry data, OnCancelledListener onCancelledListener) {
+        Log.d(TAG, "write entry: " + data);
         invalidateLatestTripEntry();
-        new MakeWriteRequestTask(mCredential, this::entryWritten).execute(getSheetId(), data);
+        new MakeWriteRequestTask(this::entryWritten, onCancelledListener).execute(getSheetId(), data);
     }
 
     private void entryWritten(TripEntry tripEntry) {

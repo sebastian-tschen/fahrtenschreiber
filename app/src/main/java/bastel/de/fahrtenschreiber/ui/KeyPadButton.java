@@ -3,9 +3,11 @@ package bastel.de.fahrtenschreiber.ui;
 import android.content.Context;
 import android.util.AttributeSet;
 
+import com.google.android.material.button.MaterialButton;
+
 import androidx.appcompat.widget.AppCompatButton;
 
-public class KeyPadButton extends AppCompatButton {
+public class KeyPadButton extends MaterialButton {
 
 
     public KeyPadButton(Context context) {

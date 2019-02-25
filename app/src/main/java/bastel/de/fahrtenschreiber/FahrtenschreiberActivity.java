@@ -53,13 +53,15 @@ import java.util.List;
 import androidx.preference.PreferenceManager;
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
 import listeners.EventuallyGetLatestTripCallback;
+import listeners.OnCancelledListener;
 import listeners.TripEntryUpdatedListener;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public abstract class FahrtenschreiberActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener
-        , EasyPermissions.PermissionCallbacks {
+        implements NavigationView.OnNavigationItemSelectedListener,
+        EasyPermissions.PermissionCallbacks,
+        OnCancelledListener {
 
     private static final String F_TAG = "nobbi";
     GoogleAccountCredential mCredential;
@@ -76,13 +78,10 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     private static final String[] SCOPES = {SheetsScopes.SPREADSHEETS};
 
     static final String SHEET_ID = "1x3AFBQ93jx5PXLcbiw3Dbr4jvFrCRRD0nWcFUALkUvo";
-
-
+    protected SheetsHelper sheetsHelper;
 
 
     public String getDefaultDriver() {
-
-        showGooglePlayServicesAvailabilityErrorDialog()
         return PreferenceManager.getDefaultSharedPreferences(this)
                 .getString("driver", "");
     }
@@ -174,7 +173,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-                    eventuallyGetLatestTrip(tripEntry -> {
+                    sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
                     });
                 }
                 break;
@@ -303,7 +302,11 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
 
-        eventuallyGetLatestTrip(tripEntry -> {
+        sheetsHelper = SheetsHelper.getInstance();
+
+        sheetsHelper.init(getApplicationContext(), mCredential);
+
+        sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
         });
 
     }
@@ -347,20 +350,9 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-
-        if (id == R.id.nav_record_trip) {
-            Intent newAct = new Intent(this, TripRecordActivity.class);
-            startActivity(newAct);
-            overridePendingTransition(R.anim.enter_from_left, R.anim.exit_to_right);
-        } else if (id == R.id.nav_record_refuel) {
-
-            Intent newAct = new Intent(this, RefuelRecordActivity.class);
-            startActivity(newAct);
-            overridePendingTransition(R.anim.enter_from_right, R.anim.exit_to_left);
-        } else if (id == R.id.nav_quick_trip) {
+        if (id == R.id.nav_quick_trip) {
             Intent newAct = new Intent(this, QuickTripInputActivity.class);
             startActivity(newAct);
-            overridePendingTransition(R.anim.enter_from_right, R.anim.exit_to_left);
         } else if (id == R.id.nav_settings) {
             Intent newAct = new Intent(this, SettingsActivity.class);
             startActivity(newAct);
@@ -369,6 +361,27 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    public void onCancel(Exception mLastError) {
+        if (mLastError != null) {
+            if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+                showGooglePlayServicesAvailabilityErrorDialog(
+                        ((GooglePlayServicesAvailabilityIOException) mLastError)
+                                .getConnectionStatusCode());
+            } else if (mLastError instanceof UserRecoverableAuthIOException) {
+                startActivityForResult(
+                        ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                        REQUEST_AUTHORIZATION);
+            } else {
+                toast("The following error occurred:\n"
+                        + mLastError.getMessage());
+            }
+        } else {
+            toast("Request cancelled.");
+        }
+
     }
 
 

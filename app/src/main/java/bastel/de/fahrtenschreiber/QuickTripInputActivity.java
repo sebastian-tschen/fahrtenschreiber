@@ -1,22 +1,28 @@
 package bastel.de.fahrtenschreiber;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.TextView;
 
-import java.time.Instant;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
 import bastel.de.fahrtenschreiber.ui.KeyPadButton;
 
-public class QuickTripInputActivity extends FahrtenschreiberActivity {
+public class QuickTripInputActivity extends FahrtenschreiberActivity implements DatePickerDialog.OnDateSetListener {
 
 
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM");
     private List<Integer> buttonsIds;
     private TextView newOdoReadingTextView;
     private TextView projectedDistanceTextView;
@@ -24,6 +30,14 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity {
     private String enteredText = "";
     private TripEntry lastTripEntry = null;
     private String frontText = "";
+    private LocalDate date = LocalDate.now();
+    private Button dateButton;
+
+    private Button driverButton;
+    private Button commentButton;
+    private FloatingActionButton addButton;
+
+    List<View> buttons = new ArrayList<>();
 
 
     @Override
@@ -61,7 +75,9 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity {
                 R.id.kpb_9);
 
         for (int b_id : buttonsIds) {
-            findViewById(b_id).setOnClickListener(keyPadOnClickListener);
+            View view = findViewById(b_id);
+            view.setOnClickListener(keyPadOnClickListener);
+            buttons.add(view);
         }
         updateText();
 
@@ -72,10 +88,27 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity {
         if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         }
-        eventuallyGetLatestTrip(tripEntry -> {
+        sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
             lastTripEntry = tripEntry;
             updateText();
         });
+
+
+        dateButton = findViewById(R.id.date_button);
+        dateButton.setText(date.format(DATE_FORMATTER));
+
+        driverButton = findViewById(R.id.driver_button);
+        driverButton.setText(getDefaultDriver());
+
+        commentButton = findViewById(R.id.comment_button);
+
+        addButton = findViewById(R.id.add_entry_button);
+
+        buttons.add(commentButton);
+        buttons.add(dateButton);
+        buttons.add(driverButton);
+        buttons.add(addButton);
+
 
 
     }
@@ -116,31 +149,59 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity {
         updateText();
     }
 
+
+    private void setAllButtonsEnabled(boolean enabled){
+        for (View button:buttons){
+            button.setEnabled(enabled);
+        }
+    }
+
     public void writeEntry(View view) {
 
+        if (enteredText.isEmpty()){
+            return;
+        }
         if (lastTripEntry != null) {
             Integer newOdo = Integer.parseInt(frontText + enteredText);
             String driver = getDefaultDriver();
-            LocalDate date = LocalDate.now();
+            LocalDate date = this.date;
             Integer row = null;
             if (lastTripEntry.getRow() != null) {
                 row = lastTripEntry.getRow() + 1;
             }
             TripEntry entry = new TripEntry(driver, newOdo, date, row);
-            tripEntryCallbacks.add(tripEntry -> {
+            sheetsHelper.tripEntryCallbacks.add(tripEntry -> {
                 lastTripEntry = tripEntry;
-                enteredText="";
+                enteredText = "";
                 updateText();
+                setAllButtonsEnabled(true);
             });
-            writeNewEntry(entry);
+            setAllButtonsEnabled(false);
+            sheetsHelper.writeNewEntry(entry, this);
 
 
         } else {
-            toast("letztter eintrag konnte nicht gefunden werden.");
+            toast("letzter eintrag konnte nicht gefunden werden.");
         }
+    }
 
+    public void pickDate(View view) {
+
+        DatePickerDialog dialog = new DatePickerDialog(this);
+        dialog.setOnDateSetListener(this);
+        dialog.show();
 
     }
 
+    @Override
+    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+        date = LocalDate.of(year, month, dayOfMonth);
+        dateButton.setText(date.format(DATE_FORMATTER));
+    }
 
+    @Override
+    public void onCancel(Exception mLastError) {
+        super.onCancel(mLastError);
+        setAllButtonsEnabled(true);
+    }
 }

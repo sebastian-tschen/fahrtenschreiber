@@ -8,17 +8,6 @@
     tools:context=".QuickTripInputActivity"
     tools:showIn="@layout/quick_trip_main">
 
-    <Button
-        android:id="@+id/Button"
-        android:layout_width="0dp"
-        android:layout_height="75dp"
-        android:background="@color/colorAccent"
-        android:text="@string/trip_add_activity_title"
-        android:onClick="writeEntry"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <TableLayout
         android:id="@+id/tableLayout"
         android:layout_width="wrap_content"
@@ -26,131 +15,223 @@
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/Button"
+        app:layout_constraintBottom_toTopOf="@+id/add_entry_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
                 android:text="1"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp"
+
+                />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textColor="@color/black"
                 android:text="2"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
                 android:text="3"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
         </TableRow>
 
         <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
                 android:text="4"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textColor="@color/black"
                 android:text="5"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
                 android:text="6"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
         </TableRow>
 
         <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_7"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
                 android:text="7"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_8"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textColor="@color/black"
                 android:text="8"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_9"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
                 android:text="9"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
         </TableRow>
 
         <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
-            <ImageButton
-                android:id="@+id/del"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="TODO"
-                android:onClick="delete"
-                android:src="@android:drawable/ic_delete" />
+            <bastel.de.fahrtenschreiber.ui.KeyPadButton
+                android:id="@+id/kpb_x0"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
+                android:text="0"
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                android:visibility="invisible" />
 
             <bastel.de.fahrtenschreiber.ui.KeyPadButton
                 android:id="@+id/kpb_0"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textColor="@color/black"
                 android:text="0"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display2" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                app:cornerRadius="100dp" />
 
-            <ImageButton
-                android:id="@+id/backsp"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:onClick="backspace"
-                android:src="@android:drawable/ic_input_delete" />
+
+            <bastel.de.fahrtenschreiber.ui.KeyPadButton
+                android:id="@+id/kpb_x1"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:textColor="@color/black"
+                android:text="0"
+                android:textAppearance="@style/TextAppearance.AppCompat.Display2"
+                android:visibility="invisible" />
 
         </TableRow>
     </TableLayout>
 
-    <TextView
-        android:id="@+id/new_odo_reading"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/frameLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="16dp"
-        android:fontFamily="@font/cousine"
-        android:text="123123"
-        android:textAlignment="textEnd"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display3"
+
+        android:background="@color/graybackground"
         app:layout_constraintBottom_toTopOf="@+id/textView"
-        app:layout_constraintEnd_toStartOf="@+id/textView2"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+
+        <TextView
+            android:id="@+id/new_odo_reading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/cousine"
+            android:singleLine="true"
+            android:text="123123"
+            android:textAlignment="textEnd"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display3"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/backsp" />
+
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/del"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@null"
+            android:onClick="delete"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Button"
+            app:icon="@android:drawable/ic_menu_close_clear_cancel"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:cornerRadius="100dp"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/backsp"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:onClick="backspace"
+            app:cornerRadius="100dp"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Button"
+            app:icon="@android:drawable/ic_input_delete"
+            app:iconGravity="start"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <TextView
         android:id="@+id/projected_trip_distance"
@@ -177,16 +258,68 @@
         app:layout_constraintBottom_toTopOf="@+id/tableLayout"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <TextView
-        android:id="@+id/textView2"
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/date_button"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="TODAY"
+        android:onClick="pickDate"
+        android:singleLine="true"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Button"
+        app:cornerRadius="100dp"
+        app:icon="@android:drawable/ic_menu_my_calendar"
+        app:layout_constraintBottom_toTopOf="@+id/frameLayout"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/driver_button"
+        style="@style/Widget.MaterialComponents.Button.IconButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:text="DRIVER"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Button"
+        app:cornerRadius="100dp"
+        app:icon="@android:drawable/ic_menu_myplaces"
+        app:layout_constraintBottom_toTopOf="@+id/frameLayout"
+        app:layout_constraintStart_toEndOf="@+id/date_button" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/comment_button"
+        style="@style/Widget.MaterialComponents.Button.IconButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="KOMMENTAR"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Button"
+        app:cornerRadius="100dp"
+        app:icon="@android:drawable/ic_menu_edit"
+        app:layout_constraintBottom_toTopOf="@+id/frameLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/driver_button" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add_entry_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="24dp"
-        android:text="km"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display2"
-        app:layout_constraintBottom_toTopOf="@+id/textView"
-        app:layout_constraintEnd_toEndOf="parent" />
-
+        android:layout_marginBottom="8dp"
+        android:background="@color/colorAccent"
+        android:clickable="true"
+        android:onClick="writeEntry"
+        android:text="@string/trip_add_activity_title"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/ic_add_black_24dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
