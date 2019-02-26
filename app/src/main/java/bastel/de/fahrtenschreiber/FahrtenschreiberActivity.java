@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -28,33 +27,17 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.SheetsScopes;
-import com.google.api.services.sheets.v4.model.AppendValuesResponse;
-import com.google.api.services.sheets.v4.model.ValueRange;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import androidx.preference.PreferenceManager;
-import bastel.de.fahrtenschreiber.pojo.TripEntry;
-import listeners.EventuallyGetLatestTripCallback;
 import listeners.OnCancelledListener;
-import listeners.TripEntryUpdatedListener;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -63,7 +46,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         EasyPermissions.PermissionCallbacks,
         OnCancelledListener {
 
-    private static final String F_TAG = "nobbi";
+    private static final String TAG = "nobbi";
     GoogleAccountCredential mCredential;
 
     //    ProgressDialog mProgress;
@@ -86,14 +69,19 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                 .getString("driver", "");
     }
 
+    public String getDefaultComment() {
+        return PreferenceManager.getDefaultSharedPreferences(this)
+                .getString("comment", "");
+    }
+
     public void toast(String s) {
 
         Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show();
-        Log.d(F_TAG, s);
+        Log.d(TAG, s);
     }
 
     public void debug(String s) {
-        Log.d(F_TAG, s);
+        Log.d(TAG, s);
     }
 
     /**
@@ -129,6 +117,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                     REQUEST_PERMISSION_GET_ACCOUNTS,
                     Manifest.permission.GET_ACCOUNTS);
         }
+        sheetsHelper.init(getApplicationContext(), mCredential);
     }
 
     /**
@@ -168,13 +157,20 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
+                        sheetsHelper.init(getApplicationContext(), mCredential);
+                        sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
+                        });
                     }
                 }
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-                    sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
-                    });
+                    if (mCredential.getSelectedAccount() == null) {
+                        chooseAccount();
+                    } else {
+                        sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
+                        });
+                    }
                 }
                 break;
         }
@@ -304,10 +300,12 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
         sheetsHelper = SheetsHelper.getInstance();
 
-        sheetsHelper.init(getApplicationContext(), mCredential);
-
-        sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
-        });
+        if (!isGooglePlayServicesAvailable()) {
+            acquireGooglePlayServices();
+        }
+        if (mCredential.getSelectedAccountName() == null) {
+            chooseAccount();
+        }
 
     }
 
@@ -384,5 +382,9 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
 
     }
 
-
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "ActivityStopped: " + this);
+        super.onStop();
+    }
 }

@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
     <EditTextPreference
-        android:dialogTitle="Enter a text"
+        android:dialogTitle="Sheet-ID eintragen"
+        android:key="sheet_id"
+        android:summary="die id der tabelle in die eingetragen wird"
+        android:title="Sheet_ID" />
+    <EditTextPreference
+        android:dialogTitle="Standard Fahrer eintragen"
         android:key="driver"
         android:summary="der standard Fahrer"
         android:title="Fahrer" />
     <EditTextPreference
-        android:dialogTitle="Enter a text"
-        android:key="sheet_id"
-        android:summary="die id der tabelle in die eingetragen wird"
-        android:title="Sheet_ID" />
+        android:dialogTitle="Standard Kommentar eintragen"
+        android:key="comment"
+        android:summary="der standard kommentar text"
+        android:title="Kommentar" />
 </PreferenceScreen>

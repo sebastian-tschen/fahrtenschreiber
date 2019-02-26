@@ -5,17 +5,19 @@ import java.time.LocalDate;
 public class TripEntry {
 
 
+    private final String comment;
     private String driver;
     private Integer odo;
     private LocalDate date;
     private Integer row;
 
 
-    public TripEntry(String driver, Integer odo, LocalDate date, Integer row) {
+    public TripEntry(String driver, Integer odo, LocalDate date, String comment, Integer row) {
         this.driver = driver;
         this.odo = odo;
         this.date = date;
         this.row = row;
+        this.comment = comment;
     }
 
 
@@ -23,32 +25,16 @@ public class TripEntry {
         return driver;
     }
 
-    public void setDriver(String driver) {
-        this.driver = driver;
-    }
-
     public Integer getOdo() {
         return odo;
-    }
-
-    public void setOdo(Integer odo) {
-        this.odo = odo;
     }
 
     public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
     public Integer getRow() {
         return row;
-    }
-
-    public void setRow(Integer row) {
-        this.row = row;
     }
 
     @Override
@@ -56,6 +42,11 @@ public class TripEntry {
         return "" + driver +
                 " - " + date +
                 " - " + odo +
+                " - " + comment +
                 " - row: " + row;
+    }
+
+    public String getComment() {
+        return comment;
     }
 }

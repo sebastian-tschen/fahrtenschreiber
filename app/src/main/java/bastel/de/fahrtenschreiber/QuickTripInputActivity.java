@@ -1,11 +1,14 @@
 package bastel.de.fahrtenschreiber;
 
 import android.app.DatePickerDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.Html;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -16,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import androidx.appcompat.app.AlertDialog;
 import bastel.de.fahrtenschreiber.pojo.TripEntry;
 import bastel.de.fahrtenschreiber.ui.KeyPadButton;
 
@@ -38,6 +42,8 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
     private FloatingActionButton addButton;
 
     List<View> buttons = new ArrayList<>();
+    private String driver = null;
+    private String comment = null;
 
 
     @Override
@@ -82,12 +88,6 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
         updateText();
 
 
-        if (!isGooglePlayServicesAvailable()) {
-            acquireGooglePlayServices();
-        }
-        if (mCredential.getSelectedAccountName() == null) {
-            chooseAccount();
-        }
         sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
             lastTripEntry = tripEntry;
             updateText();
@@ -98,7 +98,7 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
         dateButton.setText(date.format(DATE_FORMATTER));
 
         driverButton = findViewById(R.id.driver_button);
-        driverButton.setText(getDefaultDriver());
+        driverButton.setText(getDriver());
 
         commentButton = findViewById(R.id.comment_button);
 
@@ -108,7 +108,6 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
         buttons.add(dateButton);
         buttons.add(driverButton);
         buttons.add(addButton);
-
 
 
     }
@@ -150,26 +149,27 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
     }
 
 
-    private void setAllButtonsEnabled(boolean enabled){
-        for (View button:buttons){
+    private void setAllButtonsEnabled(boolean enabled) {
+        for (View button : buttons) {
             button.setEnabled(enabled);
         }
     }
 
     public void writeEntry(View view) {
 
-        if (enteredText.isEmpty()){
+        if (enteredText.isEmpty()) {
             return;
         }
         if (lastTripEntry != null) {
             Integer newOdo = Integer.parseInt(frontText + enteredText);
-            String driver = getDefaultDriver();
+            String driver = getDriver();
             LocalDate date = this.date;
+            String comment = getComment();
             Integer row = null;
             if (lastTripEntry.getRow() != null) {
                 row = lastTripEntry.getRow() + 1;
             }
-            TripEntry entry = new TripEntry(driver, newOdo, date, row);
+            TripEntry entry = new TripEntry(driver, newOdo, date, comment, row);
             sheetsHelper.tripEntryCallbacks.add(tripEntry -> {
                 lastTripEntry = tripEntry;
                 enteredText = "";
@@ -179,10 +179,23 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
             setAllButtonsEnabled(false);
             sheetsHelper.writeNewEntry(entry, this);
 
-
         } else {
             toast("letzter eintrag konnte nicht gefunden werden.");
         }
+    }
+
+    private String getDriver() {
+        if (driver == null) {
+            return getDefaultDriver();
+        }
+        return driver;
+    }
+
+    public String getComment() {
+        if (comment==null){
+            return getDefaultComment();
+        }
+        return comment;
     }
 
     public void pickDate(View view) {
@@ -195,7 +208,7 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
 
     @Override
     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-        date = LocalDate.of(year, month+1, dayOfMonth);
+        date = LocalDate.of(year, month + 1, dayOfMonth);
         dateButton.setText(date.format(DATE_FORMATTER));
     }
 
@@ -203,5 +216,58 @@ public class QuickTripInputActivity extends FahrtenschreiberActivity implements 
     public void onCancel(Exception mLastError) {
         super.onCancel(mLastError);
         setAllButtonsEnabled(true);
+    }
+
+    public void pickDriver(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Fahrer");
+
+        final EditText input = new EditText(this);
+        input.setText(getDriver());
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (!input.getText().toString().isEmpty()) {
+                    driver = input.getText().toString();
+                    driverButton.setText(driver);
+                }
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+    public void pickComment(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Kommentar");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                comment = input.getText().toString();
+                commentButton.setText(comment);
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
 }

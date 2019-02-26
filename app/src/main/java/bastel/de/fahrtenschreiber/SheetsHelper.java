@@ -7,8 +7,6 @@ import android.widget.Toast;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -72,17 +70,17 @@ public class SheetsHelper {
      * @param credential
      */
     public synchronized void init(Context appContext, GoogleAccountCredential credential) {
-        if (!isInitialized()) {
-            mCredential = credential;
-            this.appContext = appContext;
-
-            HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-            mService = new com.google.api.services.sheets.v4.Sheets.Builder(
-                    transport, jsonFactory, credential)
-                    .setApplicationName("Google Sheets API Android Quickstart")
-                    .build();
-
+        if (!isInitialized() && credential != null) {
+            if (credential.getSelectedAccount() != null) {
+                mCredential = credential;
+                this.appContext = appContext;
+                HttpTransport transport = AndroidHttp.newCompatibleTransport();
+                JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+                mService = new com.google.api.services.sheets.v4.Sheets.Builder(
+                        transport, jsonFactory, credential)
+                        .setApplicationName("Google Sheets API Android Quickstart")
+                        .build();
+            }
         }
     }
 
@@ -161,7 +159,7 @@ public class SheetsHelper {
             rowData.add(data.getDriver());
             rowData.add(data.getDate().format(DATE_TIME_FORMATTER));
             rowData.add(data.getOdo().toString());
-            rowData.add("added via Fahrtenschreiber (TM)");
+            rowData.add(data.getComment());
             List<List<Object>> matrixData = new ArrayList<>();
             matrixData.add(rowData);
             input.setValues(matrixData);
@@ -264,6 +262,10 @@ public class SheetsHelper {
                     List<Object> row = values.get(values.size() - i);
                     if (row.size() >= 3) {
                         String driver = (String) row.get(0);
+                        String comment = "";
+                        if (row.size()>3){
+                            comment = (String) row.get(3);
+                        }
                         int odo = Integer.parseInt((String) row.get(2));
                         LocalDate date = null;
                         try {
@@ -271,12 +273,12 @@ public class SheetsHelper {
                         } catch (DateTimeParseException e) {
                             //date could not be parsed. just leave blank
                         }
-                        return new TripEntry(driver, odo, date, values.size() + 2 - i);
+                        return new TripEntry(driver, odo, date, comment, values.size() + 2 - i);
                     }
 
                 }
             }
-            return new TripEntry(null, null, null, null);
+            return new TripEntry(null, null, null, null, null);
         }
 
 
@@ -315,7 +317,7 @@ public class SheetsHelper {
             return;
         }
         tripEntryCallbacks.add(callback);
-        if (!lastEntryRetrievalRunning && mCredential.getSelectedAccount() != null) {
+        if (isInitialized() && !lastEntryRetrievalRunning && mCredential.getSelectedAccount() != null) {
             lastEntryRetrievalRunning = true;
             new GetLastEntryTask(this::writeNewLatestTripValue, error -> {
                 if (error != null) {
