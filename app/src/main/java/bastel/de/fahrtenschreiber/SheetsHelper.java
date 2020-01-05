@@ -1,5 +1,6 @@
 package bastel.de.fahrtenschreiber;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -7,6 +8,7 @@ import android.widget.Toast;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -30,6 +32,8 @@ import listeners.EventuallyGetLatestTripCallback;
 import listeners.OnCancelledListener;
 import listeners.TripEntryUpdatedListener;
 
+import static bastel.de.fahrtenschreiber.FahrtenschreiberActivity.REQUEST_AUTHORIZATION;
+
 public class SheetsHelper {
 
     public static final String TAG = "nobbi";
@@ -43,12 +47,12 @@ public class SheetsHelper {
 
 
     private GoogleAccountCredential mCredential;
-    private Context appContext;
+    private Activity activity;
     private Sheets mService;
 
 
     public String getSheetId() {
-        return PreferenceManager.getDefaultSharedPreferences(appContext)
+        return PreferenceManager.getDefaultSharedPreferences(activity)
                 .getString("sheet_id", SHEET_ID);
     }
 
@@ -66,14 +70,14 @@ public class SheetsHelper {
     /**
      * initialize this singelton if it is not already initialized.
      *
-     * @param appContext
+     * @param activity
      * @param credential
      */
-    public synchronized void init(Context appContext, GoogleAccountCredential credential) {
+    public synchronized void init(Activity activity, GoogleAccountCredential credential) {
         if (!isInitialized() && credential != null) {
             if (credential.getSelectedAccount() != null) {
                 mCredential = credential;
-                this.appContext = appContext;
+                this.activity = activity;
                 HttpTransport transport = AndroidHttp.newCompatibleTransport();
                 JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
                 mService = new com.google.api.services.sheets.v4.Sheets.Builder(
@@ -93,7 +97,7 @@ public class SheetsHelper {
 
     private void toast(String s) {
 
-        Toast.makeText(appContext, s, Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
         Log.d(TAG, s);
     }
 
@@ -253,30 +257,34 @@ public class SheetsHelper {
         private TripEntry getLatestTripEntry(String spreadsheet) throws IOException {
 
             String range = "Fahrten!A2:D";
-            ValueRange response = mService.spreadsheets().values()
-                    .get(spreadsheet, range)
-                    .execute();
-            List<List<Object>> values = response.getValues();
-            if (values != null) {
-                for (int i = 1; i < values.size(); i++) {
-                    List<Object> row = values.get(values.size() - i);
-                    if (row.size() >= 3) {
-                        String driver = (String) row.get(0);
-                        String comment = "";
-                        if (row.size()>3){
-                            comment = (String) row.get(3);
+            try {
+                ValueRange response = mService.spreadsheets().values()
+                        .get(spreadsheet, range)
+                        .execute();
+                List<List<Object>> values = response.getValues();
+                if (values != null) {
+                    for (int i = 1; i < values.size(); i++) {
+                        List<Object> row = values.get(values.size() - i);
+                        if (row.size() >= 3) {
+                            String driver = (String) row.get(0);
+                            String comment = "";
+                            if (row.size() > 3) {
+                                comment = (String) row.get(3);
+                            }
+                            int odo = Integer.parseInt((String) row.get(2));
+                            LocalDate date = null;
+                            try {
+                                date = LocalDate.parse((String) row.get(1), DATE_TIME_FORMATTER);
+                            } catch (DateTimeParseException e) {
+                                //date could not be parsed. just leave blank
+                            }
+                            return new TripEntry(driver, odo, date, comment, values.size() + 2 - i);
                         }
-                        int odo = Integer.parseInt((String) row.get(2));
-                        LocalDate date = null;
-                        try {
-                            date = LocalDate.parse((String) row.get(1), DATE_TIME_FORMATTER);
-                        } catch (DateTimeParseException e) {
-                            //date could not be parsed. just leave blank
-                        }
-                        return new TripEntry(driver, odo, date, comment, values.size() + 2 - i);
-                    }
 
+                    }
                 }
+            } catch (UserRecoverableAuthIOException e) {
+                activity.startActivityForResult(e.getIntent(), REQUEST_AUTHORIZATION);
             }
             return new TripEntry(null, null, null, null, null);
         }

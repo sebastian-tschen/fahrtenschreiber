@@ -117,7 +117,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                     REQUEST_PERMISSION_GET_ACCOUNTS,
                     Manifest.permission.GET_ACCOUNTS);
         }
-        sheetsHelper.init(getApplicationContext(), mCredential);
+        sheetsHelper.init(this, mCredential);
     }
 
     /**
@@ -157,7 +157,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
-                        sheetsHelper.init(getApplicationContext(), mCredential);
+                        sheetsHelper.init(this, mCredential);
                         sheetsHelper.eventuallyGetLatestTrip(tripEntry -> {
                         });
                     }
