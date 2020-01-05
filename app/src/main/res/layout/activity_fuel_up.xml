@@ -9,7 +9,7 @@
     tools:openDrawer="start">
 
     <include
-        layout="@layout/base_quick_trip"
+        layout="@layout/base_fuel_up"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
