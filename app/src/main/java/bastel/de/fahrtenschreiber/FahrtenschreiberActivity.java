@@ -46,7 +46,7 @@ public abstract class FahrtenschreiberActivity extends AppCompatActivity
         EasyPermissions.PermissionCallbacks,
         OnCancelledListener {
 
-    private static final String TAG = "nobbi";
+    private static final String TAG = "Heidi";
     GoogleAccountCredential mCredential;
 
     //    ProgressDialog mProgress;

@@ -1,5 +1,6 @@
 package bastel.de.fahrtenschreiber;
 
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -7,6 +8,13 @@ import android.widget.Toast;
 
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
+
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
+
+import static bastel.de.fahrtenschreiber.FahrtenschreiberActivity.REQUEST_AUTHORIZATION;
+import static bastel.de.fahrtenschreiber.FahrtenschreiberActivity.REQUEST_GOOGLE_PLAY_SERVICES;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -50,7 +58,22 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
 
     }
-
+    /**
+     * Display an error dialog showing that Google Play Services is missing
+     * or out of date.
+     *
+     * @param connectionStatusCode code describing the presence (or lack of)
+     *                             Google Play Services on this device.
+     */
+    void showGooglePlayServicesAvailabilityErrorDialog(
+            final int connectionStatusCode) {
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        Dialog dialog = apiAvailability.getErrorDialog(
+                getActivity(),
+                connectionStatusCode,
+                REQUEST_GOOGLE_PLAY_SERVICES);
+        dialog.show();
+    }
     private boolean checkSheetAvailable(Object newValue) {
         ProgressDialog progressDialog = new ProgressDialog(getContext());
         progressDialog.show();
@@ -60,7 +83,25 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             if (valid) {
                 sheetIDPreference.setText((String) newValue);
             } else {
-                Toast.makeText(getContext().getApplicationContext(), "not a valid sheets id: "+reason.getMessage(), Toast.LENGTH_SHORT);
+                Exception mLastError = reason;
+                if (mLastError != null) {
+                    if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
+                        showGooglePlayServicesAvailabilityErrorDialog(
+                                ((GooglePlayServicesAvailabilityIOException) mLastError)
+                                        .getConnectionStatusCode());
+                    } else if (mLastError instanceof UserRecoverableAuthIOException) {
+                        startActivityForResult(
+                                ((UserRecoverableAuthIOException) mLastError).getIntent(),
+                                REQUEST_AUTHORIZATION);
+                    } else {
+                        Toast.makeText(getContext().getApplicationContext(), "The following error occurred:\n"
+                                + mLastError.getMessage(), Toast.LENGTH_SHORT);
+
+                    }
+                } else {
+                    Toast.makeText(getContext().getApplicationContext(), "not a valid sheets id: "+reason.getMessage(), Toast.LENGTH_SHORT);
+                }
+
             }
         }, (String) newValue);
         return false;

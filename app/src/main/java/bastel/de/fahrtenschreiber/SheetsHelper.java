@@ -32,7 +32,7 @@ import listeners.TripEntryUpdatedListener;
 
 public class SheetsHelper {
 
-    public static final String TAG = "nobbi";
+    public static final String TAG = "Heidi";
     private static SheetsHelper instance = null;
 
     static final String SHEET_ID = "1x3AFBQ93jx5PXLcbiw3Dbr4jvFrCRRD0nWcFUALkUvo";
@@ -284,7 +284,7 @@ public class SheetsHelper {
 
         @Override
         protected void onPreExecute() {
-            Log.d("nobbi", "retrieve last entry");
+            Log.d("Heidi", "retrieve last entry");
         }
 
         @Override
